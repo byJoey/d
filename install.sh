@@ -5,8 +5,9 @@
 # Feedback TG (Feedback Telegram): https://t.me/+ft-zI76oovgwNmRh
 # Core Functionality By:
 #   - https://github.com/eooce (老王)
-# Version: 2.5.1.sh
+# Version: 2.5.2.sh
 # Modification: 
+#   - Fixed syntax error in the main menu's default case.
 #   - Integrated a keep-alive heartbeat script to run in the foreground after deployment.
 #   - Updated Nezha config parser to support v0 and v1 command formats.
 #   - Changed UUID generation to prioritize Python.
@@ -516,7 +517,31 @@ case "$main_choice" in
   *) 
     echo -e "${COLOR_RED}无效选项，将执行推荐安装。${COLOR_RESET}"
     # Fallback to recommended install
-    main_choice=1; CURSOR_DOWN="\033[1B"; CLEAR_LINE="\033[2K"; echo -ne "${CURSOR_DOWN}${CLEAR_LINE}\r"; eval case $main_choice in 1) : ;; esac
+    CURRENT_INSTALL_MODE="recommended"
+    echo
+    print_header "推荐安装模式 (默认执行)" "${COLOR_MAGENTA}" 
+    echo -e "${COLOR_CYAN}此模式将使用核心配置。节点名称默认为 'ibm'。${COLOR_RESET}"
+    echo
+    handle_uuid_generation 
+    handle_nezha_config
+    
+    DEFAULT_PREFERRED_IPS_REC="cloudflare.182682.xyz,joeyblog.net"
+    read_input "请输入优选IP或域名列表 (逗号隔开):" USER_PREFERRED_IPS_INPUT_REC "${DEFAULT_PREFERRED_IPS_REC}"
+    
+    PREFERRED_ADD_LIST=() 
+    IFS=',' read -r -a temp_array_rec <<< "$USER_PREFERRED_IPS_INPUT_REC"
+    for item in "${temp_array_rec[@]}"; do
+      trimmed_item=$(echo "$item" | xargs) 
+      if [ -n "$trimmed_item" ]; then PREFERRED_ADD_LIST+=("$trimmed_item"); fi
+    done
+
+    ARGO_DOMAIN=""; ARGO_AUTH=""
+    NAME="ibm" 
+    if [ ${#PREFERRED_ADD_LIST[@]} -gt 0 ]; then CFIP="${PREFERRED_ADD_LIST[0]}"; else CFIP="cloudflare.182682.xyz"; fi
+    CFPORT="443" 
+    CHAT_ID=""; BOT_TOKEN=""; UPLOAD_URL=""
+    FILE_PATH='./temp'; ARGO_PORT=$(shuf -i 2000-65535 -n 1); TUIC_PORT=''; HY2_PORT=''; REALITY_PORT='8008' 
+    run_deployment
     ;;
 esac
 exit 0
